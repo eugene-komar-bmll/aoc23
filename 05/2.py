@@ -1,9 +1,13 @@
+import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pprint import pprint
+from itertools import batched
 
 
 class Seed:
     def __init__(self):
         pass
+
 
 class ConversionMapItem:
 
@@ -54,7 +58,7 @@ class ConversionMapItem:
         for dest, src, l in self.table:
             # print('src  [', src, '..', src + l, ']')
             # check if src range
-            if number >= src and number<= src + l:
+            if number >= src and number <= src + l:
                 idx = number - src
 
                 # print('IN:', idx)
@@ -73,10 +77,6 @@ class ConversionMapItem:
             # print('')
         # print('^L')
 
-
-
-
-
         return ret
         # return self.m.get(number, number)
 
@@ -85,8 +85,6 @@ class ConversionMapItem:
 
     def __repr__(self):
         return self.__str__()
-
-
 
 
 class ConversionMap:
@@ -163,6 +161,26 @@ def extract_map(src_name, target_name, lines):
     return src_name, target_name, map_entries
 
 
+class Range:
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return f'start: {self.start:_}  end: {self.end:_}'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def merge(self, another_range):
+        if another_range.start > self.end or another_range.end < self.start:
+            return False
+
+        return True
+
+
+
+
 if __name__ == '__main__':
     file_lines = []
 
@@ -191,19 +209,37 @@ if __name__ == '__main__':
     print(almanac)
     print('-----')
 
-    min_loc = None
+    total_mins = []
 
-    for s in seeds:
-        # print(s, '-->')
-        # loc = almanac.light(s)
-        loc = almanac.location(s)
-        if min_loc is None:
-            min_loc = loc
-        print(s, loc)
-        if loc < min_loc:
-            min_loc = loc
+    ranges = [Range(start=x[0], end=x[0]+x[1]) for x in batched(seeds, 2)]
 
 
-    print(min_loc)
+    def min_in_range(_range):
+        print(_range)
+        min_loc = None
 
-    # print(almanac.light(14))
+        for s in range(_range.start, _range.end):
+            loc = almanac.location(s)
+            if min_loc is None:
+                min_loc = loc
+
+            if loc < min_loc:
+                min_loc = loc
+
+        return min_loc
+
+
+
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        features = [executor.submit(min_in_range, x) for x in ranges]
+
+        for feature in as_completed(features):
+            total_mins.append(feature.result())
+
+
+
+    print('--')
+    print(total_mins)
+    print(min(total_mins))
+
+    # print(almanac.location(70))
