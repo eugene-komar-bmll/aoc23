@@ -1,8 +1,13 @@
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from itertools import islice
 from pprint import pprint
-from itertools import batched
 
+
+def batched(iterable, n):
+   it = iter(iterable)
+   while (batch := list(islice(it, n))):
+       yield batch
 
 class Seed:
     def __init__(self):
