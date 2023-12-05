@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
 
 
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=16) as executor:
         features = [executor.submit(min_in_range, x) for x in ranges]
 
         for feature in as_completed(features):
