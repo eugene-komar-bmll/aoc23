@@ -1,7 +1,8 @@
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import islice
 from pprint import pprint
+import time
 
 
 def batched(iterable, n):
@@ -46,44 +47,30 @@ class ConversionMapItem:
         self.target = target
         self.table = table
 
-        self.m = {}
-        # self.make_map()
-
-    # def make_map(self):
-    #     for dest, src, l in self.table:
-    #         dest_range = range(dest, dest + l)
-    #         src_range = range(src, src + l)
-    #
-    #         for s, d in zip(src_range, dest_range):
-    #             self.m[s] = d
+        self.cache = []
 
     def lookup(self, number):
         ret = number
-        # print('L', number)
+
+        if number in self.cache:
+            print('I REMEMBER YOU !!!', number)
+        else:
+            self.cache.append(number)
+
         for dest, src, l in self.table:
-            # print('src  [', src, '..', src + l, ']')
-            # check if src range
+
             if number >= src and number <= src + l:
                 idx = number - src
 
-                # print('IN:', idx)
-
                 src_e = src + idx
                 dest_e = dest + idx
-                # print('SRC_E:', src_e)
-                # print('DEST_E:', dest_e)
 
                 ret = dest_e
 
-                # ?????
                 return ret
 
-            # print('dest [', dest, '..', dest + l, ']')
-            # print('')
-        # print('^L')
-
         return ret
-        # return self.m.get(number, number)
+
 
     def __str__(self):
         return f'{self.source} -> {self.target} | {self.table}'
@@ -172,7 +159,7 @@ class Range:
         self.end = end
 
     def __str__(self):
-        return f'start: {self.start:_}  end: {self.end:_}'
+        return f'start: {self.start:_}  end: {self.end:_} [{self.end - self.start:_}]'
 
     def __repr__(self):
         return self.__str__()
@@ -224,7 +211,9 @@ if __name__ == '__main__':
         min_loc = None
 
         for s in range(_range.start, _range.end):
+
             loc = almanac.location(s)
+
             if min_loc is None:
                 min_loc = loc
 
@@ -233,13 +222,16 @@ if __name__ == '__main__':
 
         return min_loc
 
+    __start = time.time()
+    min_in_range(ranges[0])
+    __end = time.time()
+    print('duration: ', __end - __start)
 
-
-    with ProcessPoolExecutor(max_workers=16) as executor:
-        features = [executor.submit(min_in_range, x) for x in ranges]
-
-        for feature in as_completed(features):
-            total_mins.append(feature.result())
+    # with ThreadPoolExecutor(max_workers=1) as executor:
+    #     features = [executor.submit(min_in_range, x) for x in ranges]
+    #
+    #     for feature in as_completed(features):
+    #         total_mins.append(feature.result())
 
 
 
